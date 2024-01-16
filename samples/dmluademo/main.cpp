@@ -1,29 +1,3 @@
-# dmlua
-
-Copyright (c) 2013-2018 brinkqiang (brink.qiang@gmail.com)
-
-[![dmlua](https://img.shields.io/badge/brinkqiang-dmlua-blue.svg?style=flat-square)](https://github.com/brinkqiang/dmlua)
-[![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/brinkqiang/dmlua/blob/master/LICENSE)
-[![blog](https://img.shields.io/badge/Author-Blog-7AD6FD.svg)](https://brinkqiang.github.io/)
-[![Open Source Love](https://badges.frapsoft.com/os/v3/open-source.png)](https://github.com/brinkqiang)
-[![GitHub stars](https://img.shields.io/github/stars/brinkqiang/dmlua.svg?label=Stars)](https://github.com/brinkqiang/dmlua) 
-[![GitHub forks](https://img.shields.io/github/forks/brinkqiang/dmlua.svg?label=Fork)](https://github.com/brinkqiang/dmlua)
-
-## Build status
-| [Linux][lin-link] | [Mac][mac-link] | [Windows][win-link] |
-| :---------------: | :----------------: | :-----------------: |
-| ![lin-badge]      | ![mac-badge]       | ![win-badge]        |
-
-[lin-badge]: https://github.com/brinkqiang/dmlua/workflows/linux/badge.svg "linux build status"
-[lin-link]:  https://github.com/brinkqiang/dmlua/actions/workflows/linux.yml "linux build status"
-[mac-badge]: https://github.com/brinkqiang/dmlua/workflows/mac/badge.svg "mac build status"
-[mac-link]:  https://github.com/brinkqiang/dmlua/actions/workflows/mac.yml "mac build status"
-[win-badge]: https://github.com/brinkqiang/dmlua/workflows/win/badge.svg "win build status"
-[win-link]:  https://github.com/brinkqiang/dmlua/actions/workflows/win.yml "win build status"
-
-## Intro
-Lua fully automated engine, based on tolua++, support lua 5.1-5.4
-```cpp
 #include "role/rolemgr.h"
 #include "role/role.h"
 #include "gtest/gtest.h"
@@ -80,12 +54,13 @@ TEST(luabasetest, luabasetest)
     {
         for (int i = 0; i < 1; ++i)
         {
-            uint64_t r = oDMLuaEngine.CallT<uint64_t>("addex", 4294967295ULL,
-                         4294967295ULL);
+            uint64_t r = oDMLuaEngine.CallT<uint64_t>("addex", 4294967295,
+                4294967295);
 
             if (r >= 0)
             {
                 std::cout << r << std::endl;
+                EXPECT_TRUE(r == 4294967295ULL * 4294967295ULL);
             }
         }
     }
@@ -145,18 +120,74 @@ TEST(luabasetest, luabasetest)
     unsigned int dwTaskID = 100;
 
     LResultINT oResult(-1);
-    oDMLuaEngine.Call("script.task.task.AcceptTask", poRole, dwTaskID, &oResult);
+    oDMLuaEngine.Call("script.task.task.AcceptTask", poRole->GetObjID(), dwTaskID, &oResult);
 
-    oDMLuaEngine.Call("script.task.task.FinishTask", poRole, dwTaskID);
+    oDMLuaEngine.Call("script.task.task.FinishTask", poRole->GetObjID(), dwTaskID);
     std::vector<std::string> vecData;
     vecData.push_back("hello");
     oDMLuaEngine.Call("script.common.test.main_vector", &vecData);
     oDMLuaEngine.Call("script.common.test.main");
+    oDMLuaEngine.Call("script.common.clone.main");
     CRoleMgr::Instance()->ReleaseRole(poRole);
 }
-```
-## Contacts
-[![Join the chat](https://badges.gitter.im/brinkqiang/dmlua/Lobby.svg)](https://gitter.im/brinkqiang/dmlua)
 
-## Thanks
-gavingqf@126.com
+
+TEST(luatype, luatype) {
+    CDMLuaEngine oDMLuaEngine;
+    /// The default search path is to search the root directory with the exe program /../ relative path (because cmake will add the $BUILD_TYPE directory to the generated bin directory.)
+    /// If you need to modify to other paths, please set your own search path
+
+    std::string strScriptRootPath = DMGetRootPath();
+    oDMLuaEngine.SetRootPath(strScriptRootPath + PATH_DELIMITER_STR + ".." + PATH_DELIMITER_STR);
+
+    oDMLuaEngine.AddModule(tolua_interface_open);
+
+    if (!oDMLuaEngine.ReloadScript())
+    {
+        ASSERT_TRUE(0);
+        return;
+    }
+    char chData = 1;
+    uint16_t wData = 2;
+    uint32_t dwData = 3;
+    uint64_t qwData = 12345678987654321;
+    int16_t sData = 5;
+    int32_t nData = 6;
+    int64_t llData = 7;
+    float fData = 8;
+    double dbData = 12345678987654321;
+
+    oDMLuaEngine.Call("script.type.type.TypeTest", chData, wData, dwData, qwData, sData, nData, llData, fData, dbData);
+}
+//
+//TEST(luaload, luaload) {
+//    if (!CDMLuaEngine::Instance()->ReloadScript()) {
+//        ASSERT_TRUE(0);
+//        return;
+//    }
+//
+//    CDMLuaEngine::Instance()->DoString(
+//        "function Sqrt(x\n)"
+//        "MAX_LOOP = 100000000\n"
+//        "z = 1.0\n"
+//        "for i = 1, MAX_LOOP do\n"
+//        "z = z - (z*z - x) / (2 * z)\n"
+//        "end\n"
+//        "return z\n"
+//        "end\n");
+//}
+//
+//TEST(lua_empty_call, lua_empty_call) {
+//    CDMLuaEngine oDMLuaEngine;
+//    if (!oDMLuaEngine.ReloadScript()) {
+//        ASSERT_TRUE(0);
+//        return;
+//    }
+//    oDMLuaEngine.DoString(
+//        "function performancetest()\n"
+//        "end\n");
+//
+//    for (int i = 0; i < DMLUA_TEST_COUNT; ++i) {
+//        oDMLuaEngine.Call("performancetest");
+//    }
+//}
